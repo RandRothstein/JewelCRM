@@ -1,0 +1,7 @@
+import Link from "next/link";
+type Item = { title: string; detail: string; meta?: string; badge?: string };
+export function FeaturePage({ eyebrow, title, description, action, items, children }: { eyebrow: string; title: string; description: string; action?: string; items: Item[]; children?: React.ReactNode }) {
+  return <div className="space-y-6"><section className="flex flex-col justify-between gap-4 md:flex-row md:items-end"><div><div className="eyebrow">{eyebrow}</div><h1 className="mt-2 font-serif text-3xl md:text-4xl">{title}</h1><p className="mt-2 max-w-2xl text-stone-500">{description}</p></div>{action&&<button className="gold-button">+ {action}</button>}</section>
+  {children}<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{items.map((item,i)=><article className="card p-5" key={i}><div className="flex items-start justify-between gap-3"><div><h2 className="font-serif text-xl">{item.title}</h2><p className="mt-2 text-sm leading-6 text-stone-500">{item.detail}</p></div>{item.badge&&<span className="rounded-full bg-[#f2e5cc] px-2.5 py-1 text-[11px] font-bold text-[#76531d]">{item.badge}</span>}</div>{item.meta&&<div className="mt-4 border-t border-[#eee4d4] pt-3 text-xs font-semibold text-stone-500">{item.meta}</div>}</article>)}</section>
+  <div className="text-right"><Link href="/dashboard" className="text-sm font-semibold text-[#8b621f]">Return to overview →</Link></div></div>;
+}

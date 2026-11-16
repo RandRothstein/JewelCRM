@@ -1,0 +1,36 @@
+{
+  "name": "jewelcrm",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.0",
+    "bcryptjs": "^3.0.2",
+    "jose": "^6.1.0",
+    "lucide-react": "^0.468.0",
+    "next": "15.5.6",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.6",
+    "prisma": "6.19.0",
+    "tailwindcss": "^4.1.17",
+    "tsx": "^4.20.6",
+    "typescript": "^5"
+  },
+  "prisma": { "seed": "tsx prisma/seed.ts" }
+}

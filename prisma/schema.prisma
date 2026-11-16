@@ -1,0 +1,542 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  GREETER
+  SALES_CRO
+  MARKETING_CRO
+  SUPPORT
+}
+
+enum CustomerStage {
+  LEAD
+  PROSPECT
+  INTERESTED
+  ESTIMATED
+  CUSTOMER
+  REPEAT
+  LAPSED
+}
+
+enum VisitOutcome {
+  OPEN
+  BOUGHT
+  ESTIMATE
+  BROWSE
+  LEFT
+}
+
+enum HoldStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  CONVERTED
+}
+
+model User {
+  id              String             @id @default(cuid())
+  name            String
+  email           String             @unique
+  phone           String?
+  passwordHash    String
+  role            Role
+  active          Boolean            @default(true)
+  requires2fa     Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  shifts          StaffShift[]
+  targets         Target[]
+  visitsAsStaff   Visit[]            @relation("VisitStaff")
+  visitsGreeter   Visit[]            @relation("VisitGreeter")
+  visitsAssigned  Visit[]            @relation("VisitAssignedCro")
+  bookings        Booking[]          @relation("BookingAssignee")
+  auditLogs       AuditLog[]
+  otpRequests     OtpAccessRequest[]
+  loginOtps       LoginOtp[]
+  salesCredited   SaleImport[]
+  stockChecks     StockCheck[]
+  feedbackOwned   Feedback[]         @relation("FeedbackOwner")
+}
+
+model LoginOtp {
+  id         String    @id @default(cuid())
+  userId     String
+  codeHash   String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StaffShift {
+  id           String    @id @default(cuid())
+  userId       String
+  rackId       String?
+  task         String?
+  plannedStart DateTime
+  plannedEnd   DateTime
+  actualStart  DateTime?
+  actualEnd    DateTime?
+  notes        String?
+  notifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id])
+  rack         Rack?     @relation(fields: [rackId], references: [id])
+}
+
+model Rack {
+  id       String       @id @default(cuid())
+  code     String       @unique
+  name     String
+  location String?
+  products Product[]
+  shifts   StaffShift[]
+}
+
+model Target {
+  id       String          @id @default(cuid())
+  userId   String
+  month    String
+  metric   String
+  goal     Float
+  achieved Float           @default(0)
+  user     User            @relation(fields: [userId], references: [id])
+  tiers    IncentiveTier[]
+
+  @@unique([userId, month, metric])
+}
+
+model IncentiveTier {
+  id          String  @id @default(cuid())
+  targetId    String
+  threshold   Float
+  reward      Float
+  description String?
+  target      Target  @relation(fields: [targetId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  sku           String          @unique
+  name          String
+  category      String
+  metal         String          @default("Gold")
+  purity        String          @default("22K")
+  weightGrams   Float
+  makingCharge  Float           @default(0)
+  stoneValue    Float           @default(0)
+  priceOverride Float?
+  stockQty      Int             @default(1)
+  acquiredAt    DateTime        @default(now())
+  imageUrl      String?
+  rackId        String?
+  available     Boolean         @default(true)
+  rack          Rack?           @relation(fields: [rackId], references: [id])
+  visitItems    VisitItem[]
+  mismatches    StockMismatch[]
+  holds         Hold[]
+  estimateItems EstimateItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model GoldRate {
+  id          String   @id @default(cuid())
+  purity      String
+  ratePerGram Float
+  effectiveAt DateTime @default(now())
+
+  @@index([purity, effectiveAt])
+}
+
+model StockCheck {
+  id            String          @id @default(cuid())
+  performedById String
+  rackId        String?
+  startedAt     DateTime        @default(now())
+  completedAt   DateTime?
+  notes         String?
+  performedBy   User            @relation(fields: [performedById], references: [id])
+  mismatches    StockMismatch[]
+}
+
+model StockMismatch {
+  id             String     @id @default(cuid())
+  stockCheckId   String
+  productId      String?
+  expectedQty    Int
+  actualQty      Int
+  resolved       Boolean    @default(false)
+  approvedById   String?
+  approvedAt     DateTime?
+  notes          String?
+  stockCheck     StockCheck @relation(fields: [stockCheckId], references: [id], onDelete: Cascade)
+  product        Product?   @relation(fields: [productId], references: [id])
+}
+
+model Customer {
+  id               String           @id @default(cuid())
+  name             String
+  phone            String           @unique
+  altPhone         String?
+  email            String?
+  birthday         DateTime?
+  anniversary      DateTime?
+  familyWeddingAt  DateTime?
+  engagementAt     DateTime?
+  festivalsJson    String           @default("[]")
+  preferredMetal   String?
+  stage            CustomerStage    @default(PROSPECT)
+  source           String           @default("WALK_IN")
+  whatsappOptIn    Boolean          @default(false)
+  totalSpend       Float            @default(0)
+  purchaseCount    Int              @default(0)
+  notes            String?
+  lastActivityAt   DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  consents         Consent[]
+  visits           Visit[]
+  estimates        Estimate[]
+  feedback         Feedback[]
+  holds            Hold[]
+  bookings         Booking[]
+  messages         MessageLog[]
+  loyalty          LoyaltyAccount?
+  otpRequests      OtpAccessRequest[]
+  sales            SaleImport[]
+  personalOffers   PersonalOffer[]
+  payments         Payment[]
+}
+
+model Consent {
+  id         String   @id @default(cuid())
+  customerId String
+  channel    String
+  granted    Boolean
+  capturedAt DateTime @default(now())
+  source     String?
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Visit {
+  id            String       @id @default(cuid())
+  customerId    String
+  greeterId     String?
+  staffId       String?
+  assignedCroId String?
+  purpose       String?
+  reason        String?
+  notes         String?
+  outcome       VisitOutcome @default(OPEN)
+  startedAt     DateTime     @default(now())
+  endedAt       DateTime?
+  customer      Customer     @relation(fields: [customerId], references: [id])
+  greeter       User?        @relation("VisitGreeter", fields: [greeterId], references: [id])
+  staff         User?        @relation("VisitStaff", fields: [staffId], references: [id])
+  assignedCro   User?        @relation("VisitAssignedCro", fields: [assignedCroId], references: [id])
+  items         VisitItem[]
+  estimates     Estimate[]
+}
+
+model VisitItem {
+  id        String  @id @default(cuid())
+  visitId   String
+  productId String
+  interest  String?
+  visit     Visit   @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Estimate {
+  id           String         @id @default(cuid())
+  customerId   String
+  visitId      String?
+  itemsJson    String
+  subtotal     Float
+  discount     Float          @default(0)
+  total        Float
+  goldRateUsed Float?
+  status       String         @default("OPEN")
+  followupStop Boolean        @default(false)
+  validUntil   DateTime?
+  createdAt    DateTime       @default(now())
+  customer     Customer       @relation(fields: [customerId], references: [id])
+  visit        Visit?         @relation(fields: [visitId], references: [id])
+  saleLinks    SaleLink[]
+  lines        EstimateItem[]
+}
+
+model EstimateItem {
+  id           String   @id @default(cuid())
+  estimateId   String
+  productId    String?
+  label        String
+  weightGrams  Float    @default(0)
+  makingCharge Float    @default(0)
+  stoneValue   Float    @default(0)
+  goldRate     Float    @default(0)
+  quotedPrice  Float
+  estimate     Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  product      Product? @relation(fields: [productId], references: [id])
+}
+
+model SaleLink {
+  id          String    @id @default(cuid())
+  estimateId  String
+  token       String    @unique
+  expiresAt   DateTime
+  viewedAt    DateTime?
+  convertedAt DateTime?
+  estimate    Estimate  @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+}
+
+model SaleImport {
+  id           String   @id @default(cuid())
+  externalRef  String   @unique
+  customerId   String?
+  croUserId    String?
+  visitId      String?
+  amount       Float
+  category     String?
+  isReturn     Boolean  @default(false)
+  soldAt       DateTime @default(now())
+  createdAt    DateTime @default(now())
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  cro          User?     @relation(fields: [croUserId], references: [id])
+}
+
+model Feedback {
+  id                String    @id @default(cuid())
+  customerId        String?
+  nps               Int
+  storeRating       Int?
+  staffRating       Int?
+  collectionRating  Int?
+  comment           String?
+  bridal            Boolean   @default(false)
+  ownerComment      String?
+  ownerReviewedAt   DateTime?
+  croAcknowledgedAt DateTime?
+  ownerId           String?
+  source            String    @default("WHATSAPP")
+  createdAt         DateTime  @default(now())
+  customer          Customer? @relation(fields: [customerId], references: [id])
+  owner             User?     @relation("FeedbackOwner", fields: [ownerId], references: [id])
+}
+
+model Hold {
+  id             String     @id @default(cuid())
+  productId      String
+  customerId     String
+  quantity       Int        @default(1)
+  lockedGoldRate Float
+  lockedPrice    Float
+  depositAmount  Float      @default(0)
+  depositPolicy  String     @default("REFUNDABLE")
+  expiresAt      DateTime
+  remindedAt     DateTime?
+  status         HoldStatus @default(ACTIVE)
+  notes          String?
+  cancelReason   String?
+  createdAt      DateTime   @default(now())
+  product        Product    @relation(fields: [productId], references: [id])
+  customer       Customer   @relation(fields: [customerId], references: [id])
+}
+
+model Booking {
+  id           String    @id @default(cuid())
+  customerId   String?
+  guestName    String
+  phone        String
+  scheduledAt  DateTime
+  purpose      String?
+  productIds   String    @default("[]")
+  status       String    @default("CONFIRMED")
+  assignedToId String?
+  remindedDay  Boolean   @default(false)
+  remindedHour Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  assignedTo   User?     @relation("BookingAssignee", fields: [assignedToId], references: [id])
+}
+
+model Campaign {
+  id              String       @id @default(cuid())
+  name            String
+  templateType    String       @default("CUSTOM")
+  goal            String?
+  segmentJson     String       @default("{}")
+  featuredJson    String       @default("[]")
+  channel         String       @default("WHATSAPP_TEMPLATE")
+  status          String       @default("DRAFT")
+  scheduledAt     DateTime?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  messagesSent    Int          @default(0)
+  messagesRead    Int          @default(0)
+  holdsCreated    Int          @default(0)
+  visitsBooked    Int          @default(0)
+  paymentsCount   Int          @default(0)
+  salesWithin14d  Float        @default(0)
+  costAmount      Float        @default(0)
+  createdAt       DateTime     @default(now())
+  offers          Offer[]
+  messages        MessageLog[]
+}
+
+model Offer {
+  id            String   @id @default(cuid())
+  campaignId    String
+  title         String
+  code          String   @unique
+  discountType  String
+  discountValue Float
+  maxDiscount   Float?
+  validFrom     DateTime
+  validUntil    DateTime
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model PersonalOffer {
+  id            String    @id @default(cuid())
+  customerId    String
+  productId     String?
+  title         String
+  discountType  String
+  discountValue Float
+  active        Boolean   @default(true)
+  validUntil    DateTime
+  createdAt     DateTime  @default(now())
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model MessageLog {
+  id          String    @id @default(cuid())
+  campaignId  String?
+  customerId  String?
+  channel     String
+  recipient   String
+  body        String
+  status      String    @default("QUEUED")
+  costAmount  Float     @default(0)
+  providerRef String?
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  customer    Customer? @relation(fields: [customerId], references: [id])
+}
+
+model LoyaltyAccount {
+  id         String          @id @default(cuid())
+  customerId String          @unique
+  points     Int             @default(0)
+  tier       String          @default("GOLD")
+  joinedAt   DateTime        @default(now())
+  expiresAt  DateTime?
+  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  ledger     LoyaltyLedger[]
+  coupons    Coupon[]
+}
+
+model LoyaltyLedger {
+  id        String         @id @default(cuid())
+  accountId String
+  points    Int
+  reason    String
+  reference String?
+  createdAt DateTime       @default(now())
+  account   LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id           String          @id @default(cuid())
+  accountId    String?
+  customerId   String?
+  code         String          @unique
+  qrPayload    String?
+  value        Float
+  scopeJson    String          @default("{}")
+  status       String          @default("ACTIVE")
+  expiresAt    DateTime?
+  usedAt       DateTime?
+  usedInBill   String?
+  account      LoyaltyAccount? @relation(fields: [accountId], references: [id])
+}
+
+model Payment {
+  id          String    @id @default(cuid())
+  customerId  String?
+  amount      Float
+  purpose     String
+  status      String    @default("PENDING")
+  providerRef String?   @unique
+  paymentUrl  String?
+  panCollected Boolean  @default(false)
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+  customer    Customer? @relation(fields: [customerId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id])
+}
+
+model OtpAccessRequest {
+  id         String    @id @default(cuid())
+  userId     String
+  customerId String?
+  codeHash   String
+  purpose    String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id])
+  customer   Customer? @relation(fields: [customerId], references: [id])
+}
+
+model MonthlyCostLine {
+  id        String   @id @default(cuid())
+  month     String
+  category  String
+  label     String
+  amount    Float
+  units     Int      @default(1)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([month])
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model StoreCart {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  customerId String?
+  itemsJson  String   @default("[]")
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}

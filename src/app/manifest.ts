@@ -1,0 +1,1 @@
+import type { MetadataRoute } from "next"; export default function manifest():MetadataRoute.Manifest{return{name:"JewelCRM",short_name:"JewelCRM",description:"Jewellery CRM and retail operations",start_url:"/dashboard",display:"standalone",background_color:"#fbf7ef",theme_color:"#a97926",icons:[]}}

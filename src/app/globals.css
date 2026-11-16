@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root { --cream: #fbf7ef; --paper: #fffdfa; --gold: #b8872f; --gold-deep: #7d571b; --charcoal: #292724; --muted: #746f66; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--cream); color: var(--charcoal); font-family: Arial, Helvetica, sans-serif; }
+button, input, select, textarea { font: inherit; }
+.card { border: 1px solid #eadfcd; background: rgba(255,253,250,.94); border-radius: 18px; box-shadow: 0 12px 32px rgba(73,52,21,.06); }
+.eyebrow { color: var(--gold-deep); font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.gold-button { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:#a97926; color:white; padding:.72rem 1.15rem; font-weight:700; border:0; cursor:pointer; }
+.soft-button { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid #dfceb2; background:white; color:#4b4235; padding:.68rem 1rem; font-weight:700; }
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th { color:#766954; font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; text-align:left; padding:.8rem; }
+td { border-top:1px solid #eee4d4; padding:.9rem .8rem; }
+input, select, textarea { width:100%; border:1px solid #dfd3c0; border-radius:12px; background:white; padding:.7rem .85rem; outline:none; }
+input:focus, select:focus, textarea:focus { border-color:#b8872f; box-shadow:0 0 0 3px rgba(184,135,47,.12); }

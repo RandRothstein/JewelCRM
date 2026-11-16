@@ -1,0 +1,12 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: jewelcrm
+      MYSQL_DATABASE: jewelcrm
+      MYSQL_USER: jewelcrm
+      MYSQL_PASSWORD: jewelcrm
+    ports: ["3306:3306"]
+    volumes: [jewelcrm_mysql:/var/lib/mysql]
+volumes:
+  jewelcrm_mysql:
